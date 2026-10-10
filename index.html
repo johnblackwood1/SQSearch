@@ -9,9 +9,13 @@
     </div>
     <p style="text-align: center;">Structured Query Search</p>
     
-    <input type="text" id="searchbox" placeholder="Type here to search the site database">
+    <div style="text-align: center;">
+      <input type="text" id="searchbox" placeholder="Type here to search the Site Database" style="width: 100%; max-width: 400px; padding: 8px;">
+    </div>
+
     <hr>
     <ul id="result"></ul>
+
     <script>
         let db;
 
@@ -31,15 +35,17 @@
             if (!val || !db) return;
 
             try {
-              const stmt = db.prepare('SELECT "1", "google.com" FROM sites WHERE "google.com" MATCH ? LIMIT 20');
+              const stmt = db.prepare('SELECT * FROM sites WHERE sites MATCH ? LIMIT 20');
               stmt.bind([`${val}*`]);
 
               while (stmt.step()) {
                 const row = stmt.get();
-                result.innerHTML += `<li><span>${row[1]}</span><span class="rank">#${row[0]}</span></li>`;
+                result.innerHTML += `<li><span>${row[1]}</span> <span class="rank">#${row[0]}</span></li>`;
               }
               stmt.free();
-            } catch (err) {}
+            } catch (err) {
+              console.error(err);
+            }
           });
         }
 
