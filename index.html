@@ -9,6 +9,7 @@
     </div>
     <p style="text-align: center;">Structured Query Search</p>
     
+    <input type="text" id="searchbox" placeholder="Type here to search the site database">
     <hr>
     <ul id="result"></ul>
     <script>
@@ -16,35 +17,33 @@
 
         async function init() {
           const SQL = await initSqlJs({
-            locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql.wasm.js`
+            locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${f}`
           });
           const buf = await (await fetch('sitedatabaselite.db')).arrayBuffer();
           db = new SQL.Database(new Uint8Array(buf));
-      
-          const searchbox = document.getElementById('q');
-          searchbox.placeholder = "Type here to search the Site Database";
-          searchbox.disabled = false;
-          searchbox.focus();
+
+          const searchbox = document.getElementById('searchbox');
+          const result = document.getElementById('result');
+
+          searchbox.addEventListener('input', e => {
+            const val = e.target.value.trim();
+            result.innerHTML = '';
+            if (!val || !db) return;
+
+            try {
+              const stmt = db.prepare('SELECT "1", "google.com" FROM sites WHERE "google.com" MATCH ? LIMIT 20');
+              stmt.bind([`${val}*`]);
+
+              while (stmt.step()) {
+                const row = stmt.get();
+                result.innerHTML += `<li><span>${row[1]}</span><span class="rank">#${row[0]}</span></li>`;
+              }
+              stmt.free();
+            } catch (err) {}
+          });
         }
 
-        document.getElementById('searchbox').addEventListener('input', e => {
-        const val = e.target.value.trim();
-        const result = document.getElementById('result');
-        r.innerHTML = '';
-        if (!val || !db) return;
-
-        try {
-          const res = db.exec(`SELECT "1", "google.com" FROM sites WHERE sites MATCH '${val}*' LIMIT 20`);
-          if (res[0]) {
-            res[0].values.forEach(row => {
-              r.innerHTML += `<li><span>${row[1]}</span><span class="rank">#${row[0]}</span></li>`;
-            });
-          }
-        } catch (err) {}
-      });
-
-      init();
+        init();
     </script>
-    <input type="text" id="searchbox" placeholder="Type here to search the Site Database">
   </body>
 </html>
