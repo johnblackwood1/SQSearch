@@ -1,0 +1,50 @@
+<html>
+  <head>
+    <title>SQSearch</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+  </head>
+  <body>
+    <div style="text-align: center;">
+      <img src="sqsearchlogo.png" alt="SQSearch">
+    </div>
+    <p style="text-align: center;">Structured Query Search</p>
+    <input type="text" id="searchbox" placeholder="Type here to search the site database">
+    <hr>
+    <ul id="result"></ul>
+    <script>
+      let db;
+
+      async function init() {
+        const SQL = await initSqlJs({
+          locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${f}`
+        });
+        const buf = await (await fetch('sitedatabaselite.db')).arrayBuffer();
+        db = new SQL.Database(new Uint8Array(buf));
+      
+        const q = document.getElementById('q');
+        q.placeholder = "Search...";
+        q.disabled = false;
+        q.focus();
+      }
+
+      document.getElementById('q').addEventListener('input', e => {
+      const val = e.target.value.trim();
+      const r = document.getElementById('r');
+      r.innerHTML = '';
+      if (!val || !db) return;
+
+      try {
+        const res = db.exec(`SELECT "1", "google.com" FROM sites WHERE sites MATCH '${val}*' LIMIT 20`);
+        if (res[0]) {
+          res[0].values.forEach(row => {
+            r.innerHTML += `<li><span>${row[1]}</span><span class="rank">#${row[0]}</span></li>`;
+          });
+        }
+      } catch (err) {}
+    });
+
+    init();
+  </script>
+    
+  </body>
+</html>
