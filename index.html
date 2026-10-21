@@ -44,7 +44,7 @@
             if (!val || !db) return;
 
             try {
-              const stmt = db.prepare('SELECT * FROM sites WHERE sites LIKE ? LIMIT 20');
+              const stmt = db.prepare('SELECT * FROM sites WHERE site LIKE ? LIMIT 20');
               stmt.bind([`%${val}%`]);
 
               let count = 0;
