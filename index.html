@@ -5,7 +5,7 @@
   </head>
   <body>
     <div style="text-align: center;">
-      <img src="sqsearchlogo.png" alt="SQSearch">
+      <img src="sqsearchlogo.png" alt="SQSearch" onerror="this.style.display='none'">
     </div>
     <p style="text-align: center;">Structured Query Search</p>
     
@@ -15,19 +15,28 @@
 
     <hr>
     
+    <ul id="result"></ul>
 
     <script>
         let db;
 
         async function init() {
-          const SQL = await initSqlJs({
-            locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${f}`
-          });
-          const buf = await (await fetch('sitedatabaselite.db')).arrayBuffer();
-          db = new SQL.Database(new Uint8Array(buf));
+          const result = document.getElementById('result');
+          try {
+            const SQL = await initSqlJs({
+              locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+            });
+            
+            const response = await fetch('sitedatabaselite.db');
+            if (!response.ok) throw new Error();
+            
+            const buf = await response.arrayBuffer();
+            db = new SQL.Database(new Uint8Array(buf));
+          } catch (err) {
+            result.innerHTML = '<li style="color: red;">Error loading database. Ensure you are running via a local server.</li>';
+          }
 
           const searchbox = document.getElementById('searchbox');
-          const result = document.getElementById('result');
 
           searchbox.addEventListener('input', e => {
             const val = e.target.value.trim();
@@ -38,19 +47,24 @@
               const stmt = db.prepare('SELECT * FROM sites WHERE sites MATCH ? LIMIT 20');
               stmt.bind([`${val}*`]);
 
+              let count = 0;
               while (stmt.step()) {
                 const row = stmt.get();
                 result.innerHTML += `<li><span>${row[1]}</span> <span class="rank">#${row[0]}</span></li>`;
+                count++;
               }
               stmt.free();
+
+              if (count === 0) {
+                result.innerHTML = `<li>No results found for "${val}"</li>`;
+              }
             } catch (err) {
-              console.error(err);
+              result.innerHTML = '<li style="color: red;">Query Error</li>';
             }
           });
         }
 
         init();
     </script>
-    <ul id="result"></ul>
   </body>
 </html>
