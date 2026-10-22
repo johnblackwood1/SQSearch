@@ -1,4 +1,4 @@
-<html>
+<<html>
   <head>
     <title>SQSearch</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
@@ -8,63 +8,66 @@
       <img src="sqsearchlogo.png" alt="SQSearch" onerror="this.style.display='none'">
     </div>
     <p style="text-align: center;">Structured Query Search</p>
-    
+
     <div style="text-align: center;">
       <input type="text" id="searchbox" placeholder="Type here to search the Site Database" style="width: 100%; max-width: 400px; padding: 8px;">
     </div>
 
     <hr>
-    
+
     <ul id="result"></ul>
 
     <script>
-        let db;
+      let db;
 
-        async function init() {
-          const result = document.getElementById('result');
-          try {
-            const SQL = await initSqlJs({
-              locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
-            });
-            
-            const response = await fetch('https://johnblackwood1.github.io/SQSearch/sitedatabaselite.db');
-            if (!response.ok) throw new Error();
-            
-            const buf = await response.arrayBuffer();
-            db = new SQL.Database(new Uint8Array(buf));
-          } catch (err) {
-            result.innerHTML = '<li style="color: red;">Error loading database. Ensure you are running via a local server.</li>';
-          }
+      async function init() {
+        const result = document.getElementById('result');
 
-          const searchbox = document.getElementById('searchbox');
-
-          searchbox.addEventListener('input', e => {
-            const val = e.target.value.trim();
-            result.innerHTML = '';
-            if (!val || !db) return;
-
-            try {
-              const stmt = db.prepare('SELECT * FROM sites WHERE site LIKE ? LIMIT 20');
-              stmt.bind([`%${val}%`]);
-
-              let count = 0;
-              while (stmt.step()) {
-                const row = stmt.get();
-                result.innerHTML += `<li><span>${row[1]}</span> <span class="rank">#${row[0]}</span></li>`;
-                count++;
-              }
-              stmt.free();
-
-              if (count === 0) {
-                result.innerHTML = `<li>No results found for "${val}"</li>`;
-              }
-            } catch (err) {
-              result.innerHTML = '<li style="color: red;">Query Error</li>';
-            }
+        try {
+          const SQL = await initSqlJs({
+            locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
           });
+
+          const response = await fetch('./sitedatabaselite.db');
+          if (!response.ok) throw new Error('DB not found');
+
+          const buf = await response.arrayBuffer();
+          db = new SQL.Database(new Uint8Array(buf));
+        } catch (err) {
+          result.innerHTML = '<li style="color: red;">Error loading database. Ensure you are running via a local server.</li>';
+          return;
         }
 
-        init();
+        const searchbox = document.getElementById('searchbox');
+
+        searchbox.addEventListener('input', e => {
+          const val = e.target.value.trim();
+          result.innerHTML = '';
+
+          if (!val || !db) return;
+
+          try {
+            const stmt = db.prepare('SELECT * FROM sites WHERE site LIKE ? LIMIT 20');
+            stmt.bind([`%${val}%`]);
+
+            let count = 0;
+            while (stmt.step()) {
+              const row = stmt.get();
+              result.innerHTML += `<li><span>${row[1]}</span> <span class="rank">#${row[0]}</span></li>`;
+              count++;
+            }
+            stmt.free();
+
+            if (count === 0) {
+              result.innerHTML = `<li>No results found for "${val}"</li>`;
+            }
+          } catch (err) {
+            result.innerHTML = '<li style="color: red;">Query Error</li>';
+          }
+        });
+      }
+
+      init();
     </script>
   </body>
 </html>
